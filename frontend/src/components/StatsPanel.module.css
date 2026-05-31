@@ -1,0 +1,190 @@
+/**
+ * StatsPanel.module.css
+ *
+ * Styles for the right-hand live metrics panel component.
+ *
+ * Layout overview:
+ *   .panel
+ *   ├── .panelHead          (title + uptime clock)
+ *   ├── .metrics            (2×2 grid of key metric cards)
+ *   │   └── .metricCard     (individual stat: value + label)
+ *   ├── .divider            (horizontal rule between sections)
+ *   ├── .gauges             (stacked progress bars)
+ *   │   └── .gauge          (label + track + fill)
+ *   ├── .chartSection       (sparkline bar chart)
+ *   │   └── .sparkline      (container for .bar elements)
+ *   ├── .endpointSection    (backend route reference list)
+ *   │   └── .endpoint       (dot + path per route)
+ *   └── .panelFooter        (tech stack badges)
+ *
+ * Design tokens consumed (defined in global :root):
+ *   --bg-2, --bg-3              surface backgrounds (base / elevated)
+ *   --border, --border-hi       border colours (subtle / prominent)
+ *   --text-2, --text-3          secondary / tertiary text
+ *   --accent, --accent-dim, --accent-glow   brand green + tints
+ *   --font-display, --font-mono typeface tokens
+ */
+
+
+/* ── Panel shell ───────────────────────────────────────────────────────────────
+   Fixed 300px width on the right edge of the app layout.
+   flex-shrink:0 prevents the parent flex row from collapsing the panel
+   when the chat area needs more space.
+   overflow:hidden clips any content that exceeds the viewport height —
+   individual sections use flex-shrink:0 to protect themselves, and
+   .panelFooter uses margin-top:auto to anchor to the bottom.
+────────────────────────────────────────────────────────────────────────────── */
+.panel {
+  width: 300px; flex-shrink: 0;
+  background: var(--bg-2); border-left: 1px solid var(--border);
+  display: flex; flex-direction: column; gap: 20px;
+  padding: 24px 20px; height: 100vh; overflow: hidden;
+}
+
+
+/* ── Panel header ──────────────────────────────────────────────────────────────
+   Title on the left, live uptime clock on the right.
+   flex-shrink:0 ensures the header never gets squeezed out of view.
+────────────────────────────────────────────────────────────────────────────── */
+.panelHead {
+  display: flex; justify-content: space-between; align-items: center;
+  flex-shrink: 0;
+}
+.panelTitle { font-family: var(--font-display); font-weight: 700; font-size: 1rem; }
+
+/* Uptime pill — accent colour on accent-dim background matches the
+   "live indicator" language used elsewhere in the product */
+.uptime {
+  font-family: var(--font-mono); font-size: 0.78rem; color: var(--accent);
+  background: var(--accent-dim); padding: 3px 10px; border-radius: 6px;
+}
+
+
+/* ── Key metric cards ──────────────────────────────────────────────────────────
+   2×2 grid gives four equal-width cards without explicit sizing.
+   Each card shows one number in large display type above a small mono label.
+   flex-shrink:0 keeps the grid at full size regardless of available height.
+────────────────────────────────────────────────────────────────────────────── */
+.metrics {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 8px; flex-shrink: 0;
+}
+.metricCard {
+  background: var(--bg-3); border: 1px solid var(--border);
+  border-radius: 10px; padding: 12px;
+  display: flex; flex-direction: column; gap: 4px;
+}
+
+/* Large display number — font-weight:800 gives it dashboard-style visual weight */
+.metricVal {
+  font-family: var(--font-display); font-size: 1.4rem; font-weight: 800; line-height: 1;
+}
+/* Unit suffix (e.g. "ms") is smaller so it doesn't compete with the number */
+.metricUnit { font-size: 0.75rem; }
+
+/* Monospace label with wide letter-spacing — matches the "category label"
+   pattern used across the app (Figma/Linear convention) */
+.metricLabel {
+  font-family: var(--font-mono); font-size: 0.62rem;
+  color: var(--text-3); letter-spacing: 0.06em;
+}
+
+
+/* ── Section divider ───────────────────────────────────────────────────────────
+   1px rule separating each section of the panel.
+   flex-shrink:0 prevents it from collapsing when the panel is height-constrained.
+────────────────────────────────────────────────────────────────────────────── */
+.divider { height: 1px; background: var(--border); flex-shrink: 0; }
+
+
+/* ── Progress gauges ───────────────────────────────────────────────────────────
+   Stacked list of labelled horizontal bars.
+   Each .gauge contains a header row (label + value) and a track with a fill.
+   .gaugeFill width is set inline by the Gauge component and transitions
+   smoothly on every update so the bars animate as new data arrives.
+────────────────────────────────────────────────────────────────────────────── */
+.gauges { display: flex; flex-direction: column; gap: 12px; flex-shrink: 0; }
+.gauge { display: flex; flex-direction: column; gap: 6px; }
+.gaugeHead { display: flex; justify-content: space-between; }
+.gaugeLabel { font-family: var(--font-mono); font-size: 0.68rem; color: var(--text-3); }
+.gaugeValue { font-family: var(--font-mono); font-size: 0.72rem; font-weight: 600; }
+
+/* Track: bg-3 background gives it a recessed appearance against the panel bg */
+.gaugeTrack { height: 4px; background: var(--bg-3); border-radius: 2px; overflow: hidden; }
+
+/* Fill: width and background set inline per gauge instance.
+   transition gives a smooth animation as values update each render. */
+.gaugeFill { height: 100%; border-radius: 2px; transition: width 0.4s ease; }
+
+
+/* ── Latency sparkline ─────────────────────────────────────────────────────────
+   Fixed-height container holding up to 12 vertical bars.
+   align-items:flex-end anchors bars to the bottom so they grow upward,
+   matching the conventional bar chart orientation.
+   Each .bar has flex:1 so all bars share the available width equally
+   regardless of how many are rendered (1–12).
+   min-height:4px ensures very low latency values still show a visible bar.
+   transition on height animates each bar when new data arrives.
+────────────────────────────────────────────────────────────────────────────── */
+.chartSection { display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; }
+.chartLabel {
+  font-family: var(--font-mono); font-size: 0.65rem;
+  color: var(--text-3); letter-spacing: 0.12em;
+}
+.sparkline {
+  display: flex; align-items: flex-end; gap: 3px;
+  height: 56px; background: var(--bg-3);
+  border-radius: 8px; padding: 8px;
+}
+
+/* Empty state label — margin:auto centres it in the flex sparkline container */
+.noData {
+  font-family: var(--font-mono); font-size: 0.7rem;
+  color: var(--text-3); margin: auto;
+}
+
+/* Individual bar — top corners rounded, bottom flush with the sparkline floor */
+.bar {
+  flex: 1; border-radius: 3px 3px 0 0; min-height: 4px;
+  transition: height 0.3s ease;
+}
+
+
+/* ── Endpoint reference list ───────────────────────────────────────────────────
+   Each backend route displayed as a dot + monospace path.
+   The glowing green dot signals "active" — consistent with the status badge
+   language used in the Sidebar. box-shadow spread creates a soft bloom.
+────────────────────────────────────────────────────────────────────────────── */
+.endpointSection { display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; }
+.endpoints { display: flex; flex-direction: column; gap: 2px; }
+.endpoint { display: flex; align-items: center; gap: 8px; padding: 5px 0; }
+
+/* Glowing dot — box-shadow uses accent-glow for a soft bloom effect */
+.endpointDot {
+  width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
+  background: var(--accent); box-shadow: 0 0 6px var(--accent-glow);
+}
+.endpointPath {
+  font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-2);
+}
+
+
+/* ── Panel footer ──────────────────────────────────────────────────────────────
+   margin-top:auto pushes the footer to the bottom of the flex column,
+   keeping it anchored regardless of how many sections are above it.
+   Tech badges are bordered pills — subtle credentialing without
+   visual weight that competes with the live metrics above.
+────────────────────────────────────────────────────────────────────────────── */
+.panelFooter { margin-top: auto; display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; }
+.footerLabel {
+  font-family: var(--font-mono); font-size: 0.65rem;
+  color: var(--text-3); letter-spacing: 0.12em;
+}
+.techBadges { display: flex; flex-wrap: wrap; gap: 6px; }
+
+/* Bordered pill badge — intentionally unstyled (no colour fill) so it
+   doesn't distract from the live data sections above */
+.badge {
+  font-family: var(--font-mono); font-size: 0.7rem;
+  padding: 4px 10px; border-radius: 5px;
+  border: 1px solid var(--border-hi); color: var(--text-2);
+}

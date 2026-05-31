@@ -1,0 +1,240 @@
+/**
+ * Sidebar.module.css
+ *
+ * Styles for the left navigation panel component.
+ *
+ * Layout overview:
+ *   .sidebar
+ *   ├── .logo              (brand mark + animated dot)
+ *   ├── .statusBadge       (.live or .offline variant)
+ *   ├── .nav               (primary navigation buttons)
+ *   │   └── .navItem       (.navActive for selected tab)
+ *   ├── .divider           (horizontal rule between sections)
+ *   ├── .section           (persona switcher group)
+ *   │   └── .personas
+ *   │       └── .personaCard  (.personaActive for selected)
+ *   └── .sidebarFooter     (build metadata + GitHub link)
+ *
+ * Design tokens consumed (defined in global :root):
+ *   --bg-2, --bg-3            surface backgrounds (base / elevated)
+ *   --border, --border-hi     border colours (subtle / prominent)
+ *   --text, --text-2, --text-3  text hierarchy
+ *   --accent, --accent-dim, --accent-glow  brand green + tints
+ *   --err                     red for offline state
+ *   --font-display, --font-mono  typeface tokens
+ *
+ * Responsive strategy:
+ *   ≥769px  vertical sidebar (fixed 260px wide, full viewport height)
+ *   ≤768px  horizontal top bar (full width, wraps to two rows)
+ *   ≤480px  tighter padding and smaller font sizes
+ */
+
+
+/* ── Sidebar shell ─────────────────────────────────────────────────────────────
+   Fixed 260px width, full viewport height. flex-shrink:0 prevents the parent
+   flex row from squeezing the sidebar when the chat area needs more space.
+   overflow-y:auto lets the sidebar scroll independently on short screens
+   without affecting the main content area.
+────────────────────────────────────────────────────────────────────────────── */
+.sidebar {
+  width: 260px; flex-shrink: 0;
+  background: var(--bg-2);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  padding: 20px 16px;
+  gap: 16px;
+  height: 100vh; overflow-y: auto;
+}
+
+
+/* ── Logo ──────────────────────────────────────────────────────────────────────
+   Brand mark. Uses display font for visual weight.
+   The animated .logoDot sits beside the wordmark and pulses continuously,
+   giving the product a "live system" feel without any JavaScript.
+────────────────────────────────────────────────────────────────────────────── */
+.logo {
+  display: flex; align-items: center; gap: 10px;
+  font-family: var(--font-display); font-weight: 700; font-size: 1rem;
+  padding: 4px 8px;
+}
+/* Pulsing dot — box-shadow spread uses accent-glow for a soft bloom effect */
+.logoDot {
+  width: 9px; height: 9px; border-radius: 50%;
+  background: var(--accent); box-shadow: 0 0 8px var(--accent-glow);
+  animation: pulse 2s infinite;
+}
+
+
+/* ── Connection status badge ───────────────────────────────────────────────────
+   Reflects the result of GET /status polled by the parent on mount.
+   Two modifier classes swap background, text, and border colour:
+     .live    → green tint (backend reachable)
+     .offline → red tint  (backend unreachable)
+   currentColor on .statusDot means the dot automatically inherits
+   the badge text colour without a separate variable.
+────────────────────────────────────────────────────────────────────────────── */
+.statusBadge {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 12px; border-radius: 8px;
+  font-family: var(--font-mono); font-size: 0.72rem;
+}
+.statusBadge.live    { background: rgba(0,229,160,0.1); color: var(--accent); border: 1px solid rgba(0,229,160,0.2); }
+.statusBadge.offline { background: rgba(255,85,102,0.1); color: var(--err);  border: 1px solid rgba(255,85,102,0.2); }
+
+/* Dot inherits badge colour via currentColor — no extra variable needed */
+.statusDot {
+  width: 7px; height: 7px; border-radius: 50%; background: currentColor;
+  animation: pulse 1.5s infinite;
+}
+
+
+/* ── Primary navigation ────────────────────────────────────────────────────────
+   Vertical stack of tab buttons. gap:2px keeps items tightly grouped
+   so they read as a cohesive list, not isolated buttons.
+   .navActive uses !important to override the hover state if the active
+   tab is also being hovered — active always wins.
+────────────────────────────────────────────────────────────────────────────── */
+.nav { display: flex; flex-direction: column; gap: 2px; }
+.navItem {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px; border-radius: 8px;
+  font-size: 0.9rem; color: var(--text-2);
+  transition: background 0.15s, color 0.15s; text-align: left; width: 100%;
+}
+.navItem:hover { background: var(--bg-3); color: var(--text); }
+/* !important ensures active styling beats hover state on the same element */
+.navActive { background: var(--accent-dim) !important; color: var(--accent) !important; }
+
+
+/* ── Section divider ───────────────────────────────────────────────────────────
+   1px horizontal rule used to visually separate nav, personas, and footer.
+   margin:4px 0 gives it slight breathing room without excessive whitespace.
+────────────────────────────────────────────────────────────────────────────── */
+.divider { height: 1px; background: var(--border); margin: 4px 0; }
+
+
+/* ── Section wrapper ───────────────────────────────────────────────────────────
+   Generic container used for the persona group (and any future sections).
+   .sectionLabel uses monospace + wide letter-spacing to mimic the
+   "category label" pattern seen in tools like Linear and Figma.
+────────────────────────────────────────────────────────────────────────────── */
+.section { display: flex; flex-direction: column; gap: 10px; }
+.sectionLabel {
+  font-family: var(--font-mono); font-size: 0.65rem;
+  color: var(--text-3); letter-spacing: 0.12em; padding: 0 4px;
+}
+
+
+/* ── Persona cards ─────────────────────────────────────────────────────────────
+   Each card is a full-width button with an icon, name, and short descriptor.
+   transparent border in the default state ensures layout doesn't shift
+   when .personaActive adds a visible border — the space is always reserved.
+   .personaActive uses !important for the same reason as .navActive above.
+────────────────────────────────────────────────────────────────────────────── */
+.personas { display: flex; flex-direction: column; gap: 4px; }
+.personaCard {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 12px; border-radius: 8px;
+  border: 1px solid transparent; /* Reserve border space to prevent layout shift on activation */
+  text-align: left;
+  transition: background 0.15s, border-color 0.15s; width: 100%;
+}
+.personaCard:hover { background: var(--bg-3); }
+/* !important overrides hover background when card is already active */
+.personaActive { background: var(--accent-dim) !important; border-color: rgba(0,229,160,0.3) !important; }
+.personaIcon { font-size: 1.3rem; }
+.personaName { font-size: 0.88rem; font-weight: 600; color: var(--text); }
+/* Descriptor sets user expectations before they switch — muted so it doesn't compete with the name */
+.personaDesc { font-size: 0.75rem; color: var(--text-3); margin-top: 1px; }
+
+
+/* ── Sidebar footer ────────────────────────────────────────────────────────────
+   margin-top:auto pushes the footer to the bottom of the flex column
+   regardless of how many items are above it — no need for absolute
+   positioning or a spacer div.
+────────────────────────────────────────────────────────────────────────────── */
+.sidebarFooter { margin-top: auto; display: flex; flex-direction: column; gap: 8px; }
+
+/* Build metadata: monospace, small, muted — social proof without visual noise */
+.footerMeta {
+  display: flex; align-items: center; gap: 6px;
+  font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-3);
+}
+.footerDot { color: var(--border-hi); }
+
+/* GitHub link styled as a bordered button — accent colour on hover */
+.footerGh {
+  font-family: var(--font-mono); font-size: 0.78rem;
+  color: var(--text-2); padding: 8px 12px; border-radius: 8px;
+  border: 1px solid var(--border-hi); text-align: center;
+  transition: border-color 0.2s, color 0.2s;
+}
+.footerGh:hover { border-color: var(--accent); color: var(--accent); }
+
+
+/* ── Shared pulse animation ────────────────────────────────────────────────────
+   Used by both .logoDot (2s) and .statusDot (1.5s).
+   Faster on the status dot so it feels more like a live heartbeat;
+   slower on the logo so it reads as ambient branding, not urgency.
+────────────────────────────────────────────────────────────────────────────── */
+@keyframes pulse {
+  0%, 100% { opacity: 1; } 50% { opacity: 0.5; }
+}
+
+
+/* ── Responsive overrides ──────────────────────────────────────────────────────
+   ≤768px — sidebar collapses from a vertical column into a horizontal
+   top bar. flex-direction:row + flex-wrap:wrap achieves this without
+   changing any markup. Key decisions at this breakpoint:
+     - Dividers hidden (no visual need in a horizontal layout)
+     - Section label hidden (space too tight)
+     - Persona descriptions hidden (cards shrink to icon + name only)
+     - Footer hidden (secondary info, not worth the space on mobile)
+     - Nav and personas reordered via `order` to keep the most important
+       controls (nav tabs) above secondary controls (persona chips)
+
+   ≤480px — further padding/font reduction for the smallest screens.
+────────────────────────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .sidebar {
+    width: 100%; height: auto;
+    border-right: none; border-bottom: 1px solid var(--border);
+    padding: 12px 16px; gap: 10px;
+    flex-direction: row; flex-wrap: wrap; align-items: center;
+    overflow-x: auto; overflow-y: visible;
+  }
+  .logo { padding: 0; }
+  .statusBadge { padding: 6px 10px; font-size: 0.68rem; }
+
+  /* Nav pushed to its own full-width row below logo + status badge */
+  .nav {
+    flex-direction: row; gap: 4px;
+    order: 3; width: 100%;
+  }
+  .navItem { padding: 8px 10px; font-size: 0.8rem; }
+
+  /* Dividers have no purpose in horizontal layout */
+  .divider { display: none; }
+
+  /* Persona section takes its own full-width row below nav */
+  .section { order: 4; width: 100%; }
+
+  /* Category label removed — no vertical space to waste */
+  .sectionLabel { display: none; }
+
+  /* Persona cards become horizontal chips */
+  .personas { flex-direction: row; flex-wrap: wrap; gap: 6px; }
+  .personaCard { padding: 6px 10px; gap: 6px; width: auto; }
+
+  /* Description hidden — icon + name sufficient at chip size */
+  .personaDesc { display: none; }
+
+  /* Footer is secondary info — hidden on mobile to save space */
+  .sidebarFooter { display: none; }
+}
+
+@media (max-width: 480px) {
+  .sidebar { padding: 10px 12px; }
+  .personaName { font-size: 0.78rem; }
+  .navItem { font-size: 0.75rem; padding: 6px 8px; }
+}

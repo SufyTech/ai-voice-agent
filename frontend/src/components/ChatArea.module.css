@@ -1,0 +1,249 @@
+/**
+ * ChatArea.module.css
+ *
+ * Styles for the main conversation panel component.
+ *
+ * Layout overview:
+ *   .area
+ *   ├── .header          (title + status hint + reset button)
+ *   ├── .messages        (scrollable message list)
+ *   │   ├── .empty       (zero-state placeholder)
+ *   │   └── .msg         (individual turn — .user or .assistant variant)
+ *   │       ├── .msgMeta (speaker label + latency badge)
+ *   │       └── .msgBubble (text content)
+ *   └── .controls        (mic button + hint text)
+ *       └── .micBtn      (idle / .recording / .processing states)
+ *
+ * Design tokens consumed (defined in global :root):
+ *   --border, --border-hi   border colours (subtle / prominent)
+ *   --bg-3                  elevated surface background
+ *   --text-2, --text-3      secondary / tertiary text
+ *   --accent, --accent-dim, --accent-glow   primary brand colour + tints
+ *   --purple-dim            user bubble background tint
+ *   --err                   red used for recording state + reset hover
+ *   --warn                  amber used for processing state
+ *   --font-display, --font-mono   typeface tokens
+ */
+
+
+/* ── Layout shell ──────────────────────────────────────────────────────────────
+   .area fills all remaining horizontal space in the parent flex row.
+   min-width:0 prevents flex children from overflowing when content is wide.
+   overflow:hidden ensures inner scroll is self-contained.
+────────────────────────────────────────────────────────────────────────────── */
+.area {
+  flex: 1; display: flex; flex-direction: column;
+  min-width: 0; overflow: hidden;
+}
+
+
+/* ── Header ────────────────────────────────────────────────────────────────────
+   Fixed-height top bar. flex-shrink:0 prevents it from collapsing when the
+   message list grows — the header must always be fully visible.
+────────────────────────────────────────────────────────────────────────────── */
+.header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 20px 28px; border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.headerTitle { font-family: var(--font-display); font-weight: 700; font-size: 1.1rem; }
+
+/* Status hint — updates dynamically based on recording/processing state */
+.headerSub { font-size: 0.82rem; color: var(--text-3); margin-top: 2px; }
+
+/* Reset button — border turns red on hover as a mild destructive-action warning */
+.resetBtn {
+  padding: 8px 16px; border-radius: 8px; font-size: 0.85rem;
+  border: 1px solid var(--border-hi); color: var(--text-2);
+  transition: border-color 0.2s, color 0.2s; white-space: nowrap;
+}
+.resetBtn:hover { border-color: var(--err); color: var(--err); }
+
+
+/* ── Message list ──────────────────────────────────────────────────────────────
+   flex:1 + overflow-y:auto makes this the only scrollable region.
+   Column direction with gap keeps turns visually separated without
+   needing margin hacks on individual bubbles.
+────────────────────────────────────────────────────────────────────────────── */
+.messages {
+  flex: 1; overflow-y: auto; padding: 28px; display: flex;
+  flex-direction: column; gap: 20px;
+}
+
+
+/* ── Empty state ───────────────────────────────────────────────────────────────
+   margin:auto centres this vertically + horizontally inside the flex column,
+   so the onboarding prompt sits in the middle of the empty message area.
+────────────────────────────────────────────────────────────────────────────── */
+.empty {
+  margin: auto; text-align: center; color: var(--text-3);
+  display: flex; flex-direction: column; align-items: center; gap: 12px;
+}
+.emptyIcon { font-size: 3rem; }
+/* Monospace hint reads like a terminal instruction — matches the techy product tone */
+.emptyHint { font-size: 0.82rem; font-family: var(--font-mono); }
+
+
+/* ── Message turns ─────────────────────────────────────────────────────────────
+   Base .msg constrains bubble width to 72% so long replies don't span
+   the full container width. align-self differentiates sides:
+     .user      → right-aligned (flex-end)
+     .assistant → left-aligned  (flex-start)
+────────────────────────────────────────────────────────────────────────────── */
+.msg { display: flex; flex-direction: column; max-width: 72%; gap: 6px; }
+.user      { align-self: flex-end;   align-items: flex-end; }
+.assistant { align-self: flex-start; align-items: flex-start; }
+
+/* Turn metadata row: speaker label + optional latency badge */
+.msgMeta { display: flex; align-items: center; gap: 8px; }
+.msgRole { font-size: 0.75rem; font-family: var(--font-mono); color: var(--text-3); }
+
+/* Latency badge — shows round-trip ms per assistant turn.
+   Accent colour draws the eye without competing with bubble text. */
+.msgLatency {
+  font-size: 0.7rem; font-family: var(--font-mono);
+  color: var(--accent); padding: 1px 6px;
+  border-radius: 4px; background: var(--accent-dim);
+}
+
+/* ── Bubbles ─────────────────────────────────────────────────────────────────
+   Shared padding/radius base. Corner radius is flattened on the
+   "tail" side (bottom-right for user, bottom-left for assistant)
+   to create a classic speech-bubble shape without an actual tail element.
+────────────────────────────────────────────────────────────────────────────── */
+.msgBubble {
+  padding: 14px 18px; border-radius: 14px;
+  font-size: 0.95rem; line-height: 1.6;
+}
+/* User bubble: purple tint matches the brand accent */
+.user .msgBubble {
+  background: var(--purple-dim); border: 1px solid rgba(124,109,250,0.2);
+  border-bottom-right-radius: 4px;
+}
+/* Assistant bubble: neutral elevated surface */
+.assistant .msgBubble {
+  background: var(--bg-3); border: 1px solid var(--border);
+  border-bottom-left-radius: 4px;
+}
+
+/* Blinking cursor appended while the assistant reply is still streaming in */
+.cursor { animation: blink 1s step-end infinite; color: var(--accent); }
+@keyframes blink { 50% { opacity: 0; } }
+
+
+/* ── Thinking indicator ────────────────────────────────────────────────────────
+   Three dots that bounce sequentially using staggered animation-delay.
+   !important overrides the shared .msgBubble padding/display so the dots
+   sit correctly centred without a separate wrapper element.
+────────────────────────────────────────────────────────────────────────────── */
+.thinking {
+  display: flex !important; gap: 6px; align-items: center;
+  padding: 16px 20px !important;
+}
+.thinking span {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--text-3); animation: dot 1.2s infinite;
+}
+/* Each dot delayed by 0.2s to create a left-to-right wave effect */
+.thinking span:nth-child(2) { animation-delay: 0.2s; }
+.thinking span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes dot {
+  0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+  40%            { transform: scale(1);   opacity: 1;   }
+}
+
+
+/* ── Controls bar ──────────────────────────────────────────────────────────────
+   flex-shrink:0 ensures mic controls are always visible at the bottom
+   regardless of how many messages fill the scrollable area above.
+────────────────────────────────────────────────────────────────────────────── */
+.controls {
+  flex-shrink: 0; padding: 28px;
+  border-top: 1px solid var(--border);
+  display: flex; flex-direction: column; align-items: center; gap: 16px;
+}
+
+
+/* ── Mic button ────────────────────────────────────────────────────────────────
+   Circular button with three visual states:
+     default     → neutral border, subtle hover glow
+     .recording  → red border + glow + scale-up (indicates live capture)
+     .processing → amber border + glow (indicates waiting for backend)
+
+   position:relative is required so the absolutely-positioned pulse rings
+   (.micRing, .micRing2) are anchored to the button, not the viewport.
+────────────────────────────────────────────────────────────────────────────── */
+.micBtn {
+  position: relative; width: 80px; height: 80px; border-radius: 50%;
+  font-size: 2rem; background: var(--bg-3); border: 2px solid var(--border-hi);
+  display: flex; align-items: center; justify-content: center;
+  transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+  user-select: none;
+}
+.micBtn:hover:not(:disabled) {
+  border-color: var(--accent); box-shadow: 0 0 20px var(--accent-glow);
+  transform: scale(1.05);
+}
+.micBtn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* Recording state — red signals the mic is live */
+.micBtn.recording {
+  border-color: var(--err); box-shadow: 0 0 24px rgba(255,85,102,0.4);
+  transform: scale(1.1);
+}
+/* Processing state — amber signals waiting (not an error, not idle) */
+.micBtn.processing {
+  border-color: var(--warn); box-shadow: 0 0 24px rgba(255,181,71,0.4);
+}
+
+
+/* ── Pulse rings ───────────────────────────────────────────────────────────────
+   Two concentric rings that expand outward and fade during recording.
+   inset:-8px places them slightly outside the button edge.
+   Staggered by 0.4s so the second ring starts mid-way through the first,
+   creating a continuous ripple rather than two simultaneous pulses.
+   pointer-events:none prevents them from intercepting clicks.
+────────────────────────────────────────────────────────────────────────────── */
+.micRing, .micRing2 {
+  position: absolute; inset: -8px; border-radius: 50%;
+  border: 2px solid var(--err);
+  opacity: 0; pointer-events: none;
+}
+.recording .micRing  { animation: ripple 1.2s infinite; }
+.recording .micRing2 { animation: ripple 1.2s 0.4s infinite; }
+@keyframes ripple {
+  from { transform: scale(0.9); opacity: 0.6; }
+  to   { transform: scale(1.5); opacity: 0; }
+}
+
+/* Contextual hint below the button — monospace matches the dev-tool aesthetic */
+.micHint {
+  font-family: var(--font-mono); font-size: 0.78rem;
+  color: var(--text-3); text-align: center;
+}
+
+
+/* ── Responsive overrides ──────────────────────────────────────────────────────
+   Breakpoints tighten padding and reduce font/button sizes for smaller screens.
+   768px: tablet — reduce whitespace, allow wider bubbles
+   480px: mobile — hide subtitle, maximise bubble width, shrink mic button
+────────────────────────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .header { padding: 14px 16px; }
+  .headerTitle { font-size: 1rem; }
+  .messages { padding: 16px; gap: 14px; }
+  .msg { max-width: 88%; }
+  .msgBubble { padding: 12px 14px; font-size: 0.9rem; }
+  .controls { padding: 16px; gap: 12px; }
+  .micBtn { width: 70px; height: 70px; font-size: 1.8rem; }
+}
+
+@media (max-width: 480px) {
+  .header { padding: 12px; }
+  /* Status subtitle hidden at narrow widths — header space is too tight */
+  .headerSub { display: none; }
+  .msg { max-width: 95%; }
+  .controls { padding: 12px; }
+  .micBtn { width: 64px; height: 64px; font-size: 1.6rem; }
+  .micHint { font-size: 0.72rem; }
+}

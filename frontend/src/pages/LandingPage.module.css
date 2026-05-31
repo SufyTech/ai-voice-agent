@@ -1,0 +1,872 @@
+/**
+ * styles.module.css
+ *
+ * Global component stylesheet for the landing page.
+ * Covers layout, ambient background, navigation, hero section,
+ * interactive demo card, stats bar, feature sections, author block,
+ * CTA section, footer, keyframe animations, and responsive breakpoints.
+ *
+ * Design tokens (--accent, --bg-2, --border, etc.) are defined in
+ * the global CSS variables sheet and consumed here via var().
+ *
+ * Breakpoints:
+ *   ≤ 900px  → tablet / large mobile  (hamburger nav, 2-col grids)
+ *   ≤ 600px  → small mobile           (single-col, tighter spacing)
+ *   ≤ 380px  → very small devices     (micro-font corrections)
+ */
+
+/* ─── Page shell ─────────────────────────────────────── */
+/*
+ * .page
+ * Root wrapper for every route/page component.
+ * Starts invisible and slightly offset downward so the entrance
+ * transition (opacity + translateY) plays on mount.
+ * The `.visible` class is toggled via JS after the component mounts,
+ * triggering the fade-in slide-up entrance animation.
+ */
+.page {
+  position: relative; min-height: 100vh;
+  overflow-x: hidden; opacity: 0;
+  transform: translateY(12px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+.page.visible { opacity: 1; transform: none; }
+
+/* ─── Ambient BG ─────────────────────────────────────── */
+/*
+ * .ambientBg
+ * Fixed full-viewport decorative layer that sits below all content
+ * (z-index: 0) and ignores pointer events so it never blocks interaction.
+ * Contains two glowing orbs and a subtle grid pattern.
+ */
+.ambientBg { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
+
+/*
+ * .orb1 / .orb2
+ * Large blurred radial-gradient circles that create the ambient glow effect.
+ * Positioned off-screen edges to bleed naturally into the viewport.
+ * Each orb drifts on an infinite alternate animation at different speeds
+ * to produce an organic, breathing feel without looping abruptly.
+ */
+.orb1 {
+  position: absolute; top: -20%; left: -10%;
+  width: 600px; height: 600px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(124,109,250,0.15) 0%, transparent 70%);
+  filter: blur(40px); animation: drift1 12s ease-in-out infinite alternate;
+}
+.orb2 {
+  position: absolute; bottom: 10%; right: -5%;
+  width: 500px; height: 500px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(0,229,160,0.1) 0%, transparent 70%);
+  filter: blur(40px); animation: drift2 15s ease-in-out infinite alternate;
+}
+
+/*
+ * .grid
+ * Hairline crosshatch grid drawn via repeating linear gradients.
+ * Extremely low opacity (0.025) so it reads as texture, not structure.
+ * 60×60px cell size aligns loosely with the 8px base spacing grid.
+ */
+.grid {
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+  background-size: 60px 60px;
+}
+
+/* Orb drift keyframes — small translate offsets keep motion subtle */
+@keyframes drift1 { to { transform: translate(40px, 30px); } }
+@keyframes drift2 { to { transform: translate(-30px, -20px); } }
+
+/* ─── Nav ────────────────────────────────────────────── */
+/*
+ * .nav
+ * Sticky top navigation bar. Uses backdrop-filter blur to create the
+ * frosted-glass effect over scrolling content. z-index: 100 keeps it
+ * above all page content including the hero section (z-index: 1).
+ */
+.nav {
+  position: relative; z-index: 100;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 20px 48px; border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(12px);
+}
+
+/*
+ * .navLogo
+ * Brand mark container — flex row with logo dot and text.
+ * Uses --font-display for visual weight distinct from body copy.
+ */
+.navLogo {
+  display: flex; align-items: center; gap: 10px;
+  font-family: var(--font-display); font-weight: 700; font-size: 1.1rem;
+}
+
+/*
+ * .logoDot
+ * Small animated accent dot next to the logo wordmark.
+ * The pulse animation reinforces the "live / active" brand signal.
+ */
+.logoDot {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: var(--accent); box-shadow: 0 0 10px var(--accent-glow);
+  animation: pulse 2s infinite;
+}
+
+/*
+ * .navBadge
+ * Version / status pill rendered in monospace to feel technical.
+ * Thin border + accent color keeps it readable without competing
+ * with primary navigation links.
+ */
+.navBadge {
+  font-family: var(--font-mono); font-size: 0.65rem;
+  padding: 2px 8px; border-radius: 4px;
+  border: 1px solid var(--accent); color: var(--accent);
+  letter-spacing: 0.1em;
+}
+
+/* .navLinks — desktop horizontal link row, hidden on mobile via media query */
+.navLinks { display: flex; align-items: center; gap: 32px; }
+.navLinks a { color: var(--text-2); font-size: 0.9rem; transition: color 0.2s; }
+.navLinks a:hover { color: var(--text); }
+
+/*
+ * .navGh
+ * GitHub CTA button inside the nav.
+ * !important overrides on color/transition prevent specificity conflicts
+ * with the generic .navLinks a rule above.
+ */
+.navGh {
+  padding: 8px 18px; border-radius: var(--radius);
+  border: 1px solid var(--border-hi); color: var(--text) !important;
+  transition: border-color 0.2s, background 0.2s !important;
+}
+.navGh:hover { border-color: var(--accent) !important; background: var(--accent-dim) !important; }
+
+/* ─── Hamburger ──────────────────────────────────────── */
+/*
+ * .hamburger
+ * Mobile-only menu toggle. Hidden on desktop (display: none) and
+ * shown at the ≤900px breakpoint. The three child .hamLine spans
+ * animate into an X when the menu is open via the .hamLineOpen* variants.
+ */
+.hamburger {
+  display: none; flex-direction: column;
+  gap: 5px; padding: 8px; border-radius: 8px;
+  border: 1px solid var(--border-hi);
+  cursor: pointer;
+}
+
+/* Default state — three neutral horizontal bars */
+.hamLine {
+  width: 22px; height: 2px; background: var(--text-2);
+  border-radius: 2px; transition: all 0.3s;
+  display: block;
+}
+
+/*
+ * .hamLineOpen1 / 2 / 3
+ * Open (X) state for each bar:
+ *   Open1 — rotates +45° and translates down to form top diagonal
+ *   Open2 — fades out (the middle bar disappears)
+ *   Open3 — rotates -45° and translates up to form bottom diagonal
+ * JS toggles between .hamLine and .hamLineOpen* classes on click.
+ */
+.hamLineOpen1 {
+  width: 22px; height: 2px; background: var(--accent);
+  border-radius: 2px; display: block;
+  transform: translateY(7px) rotate(45deg);
+  transition: all 0.3s;
+}
+.hamLineOpen2 {
+  width: 22px; height: 2px; background: var(--accent);
+  border-radius: 2px; display: block;
+  opacity: 0; transition: all 0.3s;
+}
+.hamLineOpen3 {
+  width: 22px; height: 2px; background: var(--accent);
+  border-radius: 2px; display: block;
+  transform: translateY(-7px) rotate(-45deg);
+  transition: all 0.3s;
+}
+
+/* ─── Mobile drawer ──────────────────────────────────── */
+/*
+ * .mobileMenu
+ * Full-width slide-down drawer that appears below the nav bar on mobile.
+ * Fixed positioning anchors it to the viewport so it overlays page content.
+ * top: 65px matches the nav bar height to avoid overlap.
+ * Rendered/removed from the DOM by the React component; no CSS visibility
+ * toggle needed — presence in the DOM is the open/closed signal.
+ */
+.mobileMenu {
+  position: fixed; top: 65px; left: 0; right: 0;
+  background: var(--bg-2); border-bottom: 1px solid var(--border);
+  z-index: 99; padding: 20px 24px;
+  display: flex; flex-direction: column; gap: 16px;
+}
+.mobileMenu a {
+  color: var(--text-2); font-size: 1rem; padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+.mobileMenu a:hover { color: var(--accent); }
+
+/* ─── Hero ───────────────────────────────────────────── */
+/*
+ * .hero
+ * Two-column flex layout: left column (copy + CTAs) and right column
+ * (interactive demo card). max-width: 1200px keeps the layout from
+ * stretching too wide on large monitors.
+ * On mobile the columns stack vertically (flex-direction: column).
+ */
+.hero {
+  position: relative; z-index: 1;
+  padding: 80px 48px 80px;
+  display: flex; align-items: center;
+  gap: 60px; max-width: 1200px;
+}
+.heroLeft { flex: 1; min-width: 0; }
+
+/*
+ * .heroRight
+ * Demo card container. min-width: 340px prevents the card from
+ * collapsing below a readable size on mid-size viewports before
+ * the mobile breakpoint kicks in.
+ */
+.heroRight {
+  flex: 1; position: relative;
+  display: flex; align-items: center; justify-content: center;
+  min-width: 340px;
+}
+
+/*
+ * .heroEyebrow
+ * Small pill badge above the main heading — communicates status/context
+ * at a glance. Monospace font + border reinforces the technical aesthetic.
+ * The liveDot inside pulses to suggest real-time activity.
+ */
+.heroEyebrow {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-family: var(--font-mono); font-size: 0.8rem;
+  color: var(--accent); margin-bottom: 28px;
+  padding: 6px 14px; border-radius: 20px;
+  border: 1px solid rgba(0,229,160,0.25);
+  background: var(--accent-dim);
+}
+
+/* Animated green dot inside the eyebrow pill */
+.liveDot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--accent); animation: pulse 1.5s infinite;
+}
+
+/*
+ * .heroTitle
+ * Primary display heading. clamp() provides fluid type scaling:
+ *   min 2.5rem → preferred 6vw → max 5rem.
+ * Tight letter-spacing and line-height are intentional for large
+ * display type — default values would look too loose at this scale.
+ */
+.heroTitle {
+  font-family: var(--font-display);
+  font-size: clamp(2.5rem, 6vw, 5rem);
+  font-weight: 800; line-height: 1.05;
+  letter-spacing: -0.03em; margin-bottom: 24px;
+}
+
+/*
+ * .heroAccent
+ * Outlined / hollow text variant used for emphasis within the title.
+ * -webkit-text-stroke draws the outline; color: transparent hides the fill.
+ */
+.heroAccent { -webkit-text-stroke: 2px var(--accent); color: transparent; }
+
+/* .heroSub — supporting subtitle copy; capped at 480px for readability */
+.heroSub {
+  font-size: 1.1rem; color: var(--text-2);
+  max-width: 480px; line-height: 1.7; margin-bottom: 40px;
+}
+
+/* .heroCtas — flex row of CTA buttons; wraps on narrow viewports */
+.heroCtas { display: flex; gap: 16px; flex-wrap: wrap; }
+
+/* ─── Demo card ──────────────────────────────────────── */
+/*
+ * .demoCard
+ * Simulated chat interface in the hero right column.
+ * Structured as: header bar → message list → footer input row.
+ * box-shadow creates depth against the ambient background.
+ */
+.demoCard {
+  width: 100%; max-width: 380px;
+  background: var(--bg-2); border: 1px solid var(--border);
+  border-radius: 16px; overflow: hidden;
+  position: relative; z-index: 2;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.4);
+}
+
+/*
+ * .demoHeader
+ * macOS-style title bar with traffic-light dots.
+ * Darker bg-3 background differentiates it from the message area.
+ */
+.demoHeader {
+  display: flex; align-items: center; gap: 10px;
+  padding: 14px 16px; border-bottom: 1px solid var(--border);
+  background: var(--bg-3);
+}
+
+/*
+ * .demoDots / .demoDots span
+ * macOS traffic-light circles (red/yellow/green).
+ * nth-child overrides apply the canonical Apple colors.
+ * Default background (var(--border-hi)) is a fallback for any extra dots.
+ */
+.demoDots { display: flex; gap: 6px; }
+.demoDots span {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: var(--border-hi);
+}
+.demoDots span:nth-child(1) { background: #ff5f57; }
+.demoDots span:nth-child(2) { background: #febc2e; }
+.demoDots span:nth-child(3) { background: #28c840; }
+
+/* Centered filename / model label in the window chrome */
+.demoTitle {
+  flex: 1; font-family: var(--font-mono); font-size: 0.72rem;
+  color: var(--text-3); text-align: center;
+}
+
+/* Pulsing "LIVE" indicator badge in the header */
+.demoBadge {
+  font-family: var(--font-mono); font-size: 0.65rem;
+  color: var(--accent); animation: pulse 1.5s infinite;
+}
+
+/* .demoMessages — scrollable message container; min-height prevents layout collapse */
+.demoMessages {
+  padding: 16px; display: flex; flex-direction: column;
+  gap: 12px; min-height: 200px;
+}
+
+/*
+ * .demoMsg / .demo_user / .demo_assistant
+ * Each message is a flex column; alignment variant controls whether
+ * bubbles appear on the right (user) or left (assistant).
+ */
+.demoMsg { display: flex; flex-direction: column; gap: 4px; }
+.demo_user { align-items: flex-end; }
+.demo_assistant { align-items: flex-start; }
+
+/*
+ * .demoBubble
+ * Base chat bubble. fadeUp animation plays on each new message.
+ * max-width: 85% prevents single messages from spanning the full card width.
+ * Corner radius variants (border-bottom-right/left-radius: 4px) give the
+ * "speech tail" visual cue pointing toward the sender.
+ */
+.demoBubble {
+  padding: 10px 14px; border-radius: 12px;
+  font-size: 0.85rem; line-height: 1.5; max-width: 85%;
+  animation: fadeUp 0.3s ease;
+}
+.demo_user .demoBubble {
+  background: var(--purple-dim);
+  border: 1px solid rgba(124,109,250,0.2);
+  border-bottom-right-radius: 4px; color: var(--text);
+}
+.demo_assistant .demoBubble {
+  background: var(--bg-3); border: 1px solid var(--border);
+  border-bottom-left-radius: 4px; color: var(--text);
+}
+
+/*
+ * .demoLatency
+ * Monospace latency badge (e.g. "142ms") displayed below assistant bubbles.
+ * Accent color + dim background makes it feel like a debug/telemetry tag.
+ */
+.demoLatency {
+  font-family: var(--font-mono); font-size: 0.65rem;
+  color: var(--accent); background: var(--accent-dim);
+  padding: 2px 6px; border-radius: 4px; align-self: flex-start;
+}
+
+/*
+ * .demoTyping / .demoTyping span
+ * "Three-dot" typing indicator shown while the simulated response streams.
+ * Each dot staggers its animation-delay (0, 0.2s, 0.4s) to create the
+ * classic bouncing ellipsis effect.
+ */
+.demoTyping {
+  display: flex !important; gap: 5px; align-items: center;
+  padding: 12px 16px !important;
+}
+.demoTyping span {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--text-3); animation: dot 1.2s infinite;
+}
+.demoTyping span:nth-child(2) { animation-delay: 0.2s; }
+.demoTyping span:nth-child(3) { animation-delay: 0.4s; }
+
+/*
+ * .demoFooter
+ * Input row at the bottom of the demo card — contains a mic button and
+ * a status label. Visually mirrors a real chat input area without being
+ * interactive (the demo is animated, not functional).
+ */
+.demoFooter {
+  padding: 12px 16px; border-top: 1px solid var(--border);
+  display: flex; align-items: center; gap: 10px;
+  background: var(--bg-3);
+}
+
+/*
+ * .demoMic
+ * Circular microphone button — pulsing animation implies active recording
+ * state, reinforcing the voice-AI narrative of the hero section.
+ */
+.demoMic {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: var(--accent-dim); border: 1px solid var(--accent);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1rem; animation: pulse 2s infinite;
+}
+
+/* Small helper label next to the mic icon */
+.demoMicLabel {
+  font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-3);
+}
+
+/* ─── Hero ring ──────────────────────────────────────── */
+/*
+ * .heroRing
+ * Decorative spinning SVG ring positioned in the top-right of the hero
+ * right column for visual depth. Opacity 0.5 keeps it from overpowering
+ * the demo card. Hidden at the 900px breakpoint to reduce visual clutter.
+ */
+.heroRing {
+  position: absolute; top: -40px; right: -40px;
+  width: 200px; height: 200px; z-index: 1;
+  animation: spin 20s linear infinite; opacity: 0.5;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ─── Buttons ────────────────────────────────────────── */
+/*
+ * .ctaPrimary
+ * Primary call-to-action button — filled accent background with dark text.
+ * overflow: hidden clips the .ctaOrb pseudo-element highlight.
+ * Hover lifts the button (translateY) and adds a colored drop shadow
+ * to reinforce the "raised" affordance.
+ */
+.ctaPrimary {
+  position: relative; overflow: hidden;
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 14px 32px; border-radius: var(--radius);
+  background: var(--accent); color: #0a0a0f;
+  font-family: var(--font-display); font-weight: 700; font-size: 0.95rem;
+  transition: transform 0.2s, box-shadow 0.2s; white-space: nowrap;
+}
+.ctaPrimary:hover { transform: translateY(-2px); box-shadow: 0 8px 32px var(--accent-glow); }
+
+/*
+ * .ctaOrb
+ * Subtle radial gradient highlight overlaid on the primary button.
+ * Mimics a specular reflection to give the button a slight 3D / glossy feel.
+ */
+.ctaOrb {
+  position: absolute; inset: 0;
+  background: radial-gradient(circle at 30% 50%, rgba(255,255,255,0.3), transparent 60%);
+}
+
+/*
+ * .ctaSecondary
+ * Ghost / outline variant CTA. No fill — border + muted text color
+ * gives it lower visual weight than the primary button.
+ */
+.ctaSecondary {
+  display: inline-flex; align-items: center;
+  padding: 14px 32px; border-radius: var(--radius);
+  border: 1px solid var(--border-hi); color: var(--text-2);
+  font-size: 0.95rem; transition: border-color 0.2s, color 0.2s;
+}
+.ctaSecondary:hover { border-color: var(--text-2); color: var(--text); }
+
+/* ─── Stats bar ──────────────────────────────────────── */
+/*
+ * .statsBar
+ * Horizontal row of key metrics displayed below the hero.
+ * A single bordered container with internal dividers (border-right on each
+ * .statItem) creates the "segmented panel" look without extra markup.
+ * On mobile the items wrap to a 2×2 grid (min-width: 50% per item).
+ */
+.statsBar {
+  position: relative; z-index: 1;
+  display: flex; align-items: center; justify-content: center;
+  gap: 0; margin: 0 48px;
+  border: 1px solid var(--border); border-radius: var(--radius-lg);
+  background: var(--bg-2); overflow: hidden;
+}
+.statItem {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; padding: 28px 24px;
+  border-right: 1px solid var(--border);
+}
+/* Remove the trailing divider on the last stat item */
+.statItem:last-child { border-right: none; }
+
+/* Large accent-colored number — the primary visual focal point */
+.statValue {
+  font-family: var(--font-display); font-size: 2rem;
+  font-weight: 800; color: var(--accent);
+}
+
+/* Uppercase monospace descriptor beneath each number */
+.statLabel {
+  font-family: var(--font-mono); font-size: 0.72rem;
+  color: var(--text-3); letter-spacing: 0.08em;
+  text-transform: uppercase; margin-top: 4px;
+}
+
+/* ─── Sections ───────────────────────────────────────── */
+/*
+ * .section
+ * Generic full-width content section wrapper.
+ * z-index: 1 lifts it above the fixed ambient background layer.
+ */
+.section {
+  position: relative; z-index: 1; padding: 100px 48px;
+}
+
+/* .sectionHead — top-of-section tag + title grouping with bottom margin */
+.sectionHead { margin-bottom: 64px; }
+
+/*
+ * .sectionTag
+ * Small all-caps monospace category label above section titles
+ * (e.g. "HOW IT WORKS", "STACK"). Accent color makes it stand out
+ * without competing with the title.
+ */
+.sectionTag {
+  font-family: var(--font-mono); font-size: 0.72rem;
+  color: var(--accent); letter-spacing: 0.15em;
+}
+
+/*
+ * .sectionTitle
+ * Large section heading. Uses clamp() for fluid type:
+ *   min 2rem → preferred 5vw → max 3.5rem.
+ */
+.sectionTitle {
+  font-family: var(--font-display); font-size: clamp(2rem, 5vw, 3.5rem);
+  font-weight: 800; line-height: 1.1; letter-spacing: -0.02em; margin-top: 12px;
+}
+
+/* ─── Steps ──────────────────────────────────────────── */
+/*
+ * .steps
+ * Four-column "How It Works" grid. Single bordered container with
+ * internal column dividers — the same segmented-panel pattern as .statsBar.
+ * Each card uses a CSS custom property --i for staggered fadeUp delays.
+ */
+.steps {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 0; border: 1px solid var(--border);
+  border-radius: var(--radius-lg); overflow: hidden; background: var(--bg-2);
+}
+
+/*
+ * .stepCard
+ * Individual step cell. border-right creates internal column dividers.
+ * --i is set inline on each card (style="--i:0", "--i:1", etc.) and used
+ * in animation-delay to stagger the entrance animation.
+ */
+.stepCard {
+  position: relative; padding: 40px 32px;
+  border-right: 1px solid var(--border);
+  animation: fadeUp 0.5s ease both;
+  animation-delay: calc(var(--i) * 0.1s);
+}
+.stepCard:last-child { border-right: none; }
+
+/* Step number label (e.g. "01", "02") — muted monospace for a technical look */
+.stepNum {
+  font-family: var(--font-mono); font-size: 0.7rem;
+  color: var(--text-3); margin-bottom: 20px; letter-spacing: 0.1em;
+}
+
+/* Emoji / icon for each step */
+.stepIcon { font-size: 2rem; margin-bottom: 16px; }
+
+/* Step heading */
+.stepTitle {
+  font-family: var(--font-display); font-size: 1.25rem;
+  font-weight: 700; margin-bottom: 12px;
+}
+
+/* Step body copy */
+.stepDesc { font-size: 0.88rem; color: var(--text-2); line-height: 1.65; }
+
+/*
+ * .stepArrow
+ * Accent-colored chevron/arrow overlapping the right edge of each step card
+ * to create a visual flow indicator between steps.
+ * Positioned absolutely so it straddles the column border.
+ * Hidden via display: none on mobile (where steps stack vertically).
+ */
+.stepArrow {
+  position: absolute; top: 40px; right: -14px;
+  font-size: 1.2rem; color: var(--accent); z-index: 2;
+}
+
+/* ─── Tech grid ──────────────────────────────────────── */
+/*
+ * .techGrid
+ * Three-column grid showcasing technology / stack items.
+ * Uses a background color trick for gap lines: the grid's own background
+ * (var(--border)) shows through the 1px gap between cells, creating
+ * hairline borders without explicit border declarations on each cell.
+ */
+.techGrid {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 1px; background: var(--border);
+  border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden;
+}
+
+/* Individual technology card — hover lifts background for subtle interactivity */
+.techCard {
+  background: var(--bg-2); padding: 32px;
+  transition: background 0.2s; display: flex; flex-direction: column; gap: 8px;
+}
+.techCard:hover { background: var(--bg-3); }
+
+/*
+ * .techDot
+ * Small colored indicator dot for each technology.
+ * --c is set inline per card (e.g. style="--c: #61dafb") to allow
+ * per-technology accent colors and matching glow shadows.
+ */
+.techDot {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: var(--c); margin-bottom: 8px; box-shadow: 0 0 12px var(--c);
+}
+
+/* Technology name and role / description */
+.techName { font-family: var(--font-display); font-weight: 700; font-size: 1.1rem; }
+.techRole { font-size: 0.85rem; color: var(--text-2); }
+
+/* ─── Author section ─────────────────────────────────── */
+/*
+ * .authorBox
+ * Horizontal author bio card — avatar on the left, text block on the right.
+ * Switches to vertical stacking on mobile (flex-direction: column in the
+ * 900px breakpoint).
+ */
+.authorBox {
+  display: flex; align-items: flex-start; gap: 32px;
+  padding: 40px; border: 1px solid var(--border);
+  border-radius: var(--radius-lg); background: var(--bg-2);
+}
+
+/*
+ * .authorAvatar
+ * Circular avatar placeholder that renders the author's initials
+ * when no image is available. Purple tint matches the brand palette.
+ */
+.authorAvatar {
+  width: 80px; height: 80px; border-radius: 50%; flex-shrink: 0;
+  background: var(--purple-dim); border: 2px solid rgba(124,109,250,0.3);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-display); font-size: 1.5rem; font-weight: 700;
+  color: var(--purple);
+}
+
+.authorInfo { display: flex; flex-direction: column; gap: 8px; }
+.authorName {
+  font-family: var(--font-display); font-size: 1.4rem;
+  font-weight: 700; color: var(--text);
+}
+
+/* Monospace role label in accent color — visually separates role from name */
+.authorRole {
+  font-family: var(--font-mono); font-size: 0.78rem;
+  color: var(--accent); letter-spacing: 0.05em;
+}
+
+/* Author biography paragraph — max-width caps line length for readability */
+.authorBio { font-size: 0.95rem; color: var(--text-2); line-height: 1.7; max-width: 560px; }
+
+/* Row of social / portfolio link buttons below the bio */
+.authorLinks { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 4px; }
+.authorLink {
+  padding: 8px 18px; border-radius: var(--radius);
+  border: 1px solid var(--border-hi); color: var(--text-2);
+  font-size: 0.88rem; transition: border-color 0.2s, color 0.2s;
+}
+.authorLink:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ─── CTA section ────────────────────────────────────── */
+/*
+ * .ctaSection
+ * Bottom-of-page conversion section wrapper. Distinct from .section
+ * because it has slightly reduced vertical padding — it should feel
+ * like a closing beat rather than a full content section.
+ */
+.ctaSection { position: relative; z-index: 1; padding: 80px 48px; }
+
+/*
+ * .ctaBox
+ * Centered card for the final CTA. The radial-gradient background creates
+ * a subtle top-center glow (purple hue) that draws the eye toward the
+ * headline and primary button.
+ */
+.ctaBox {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 20px; text-align: center; padding: 80px 48px;
+  border-radius: var(--radius-lg); border: 1px solid var(--border);
+  background: radial-gradient(ellipse at 50% 0%, rgba(124,109,250,0.12), transparent 70%), var(--bg-2);
+}
+
+/* Large bold headline for the final CTA — fluid type via clamp() */
+.ctaTitle {
+  font-family: var(--font-display); font-size: clamp(2rem, 4vw, 3rem);
+  font-weight: 800; letter-spacing: -0.02em;
+}
+
+/* Supporting subtitle copy beneath the CTA headline */
+.ctaSub { color: var(--text-2); font-size: 1.05rem; }
+
+/* Secondary navigation links below the main CTA button */
+.ctaLinks {
+  display: flex; align-items: center; gap: 12px;
+  font-size: 0.9rem; color: var(--text-3);
+}
+.ctaLinks a { color: var(--text-2); transition: color 0.2s; }
+.ctaLinks a:hover { color: var(--accent); }
+
+/* ─── Footer ─────────────────────────────────────────── */
+/*
+ * .footer
+ * Minimal site footer — copyright on the left, secondary link on the right.
+ * flex-direction switches to column (center-aligned) on mobile.
+ */
+.footer {
+  position: relative; z-index: 1;
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 24px 48px; border-top: 1px solid var(--border);
+  font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-3);
+}
+
+/* Inline accent-colored span used for highlighting text within the footer */
+.footerAccent { color: var(--accent); }
+
+/* ─── Animations ─────────────────────────────────────── */
+/*
+ * @keyframes pulse
+ * Smooth opacity + glow-shadow oscillation used on accent dots, badges,
+ * and the mic button. The box-shadow toggles on/off to create a breathing
+ * "active" signal. Pairs with animation: pulse Xs infinite on elements.
+ */
+@keyframes pulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 8px var(--accent-glow); }
+  50%       { opacity: 0.6; box-shadow: none; }
+}
+
+/*
+ * @keyframes fadeUp
+ * Entrance animation for cards and sections — elements slide up from
+ * 16px below their final position while fading in. Used with animation-fill-mode: both
+ * so elements stay hidden before the animation starts (no flash of visible content).
+ */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/*
+ * @keyframes dot
+ * Typing indicator dot bounce. Each dot scales from 0.6→1→0.6
+ * while its opacity rises and falls. The 80% keyframe keeps the dot
+ * small for most of the cycle so the "pop" feels snappy.
+ */
+@keyframes dot {
+  0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+  40%            { transform: scale(1);   opacity: 1;   }
+}
+
+/* ─── Responsive ─────────────────────────────────────── */
+
+/*
+ * Tablet / large mobile — ≤ 900px
+ * ─────────────────────────────────
+ * - Nav collapses to hamburger; desktop links hidden
+ * - Hero stacks vertically
+ * - Stats bar wraps to 2×N grid
+ * - Section padding reduced
+ * - Step grid switches to 2 columns; step arrows hidden
+ * - Tech grid switches to 2 columns
+ * - Author card stacks vertically
+ * - Footer stacks vertically and centers
+ */
+@media (max-width: 900px) {
+  .nav { padding: 16px 24px; }
+  .navLinks { display: none; }
+  .hamburger { display: flex; }
+  .hero { flex-direction: column; padding: 40px 24px 60px; gap: 40px; }
+  .heroRight { min-width: unset; width: 100%; }
+  .demoCard { max-width: 100%; }
+  .heroRing { display: none; }
+  .statsBar { margin: 0 24px; flex-wrap: wrap; }
+  .statItem { min-width: 50%; border-right: 1px solid var(--border); }
+  .section { padding: 60px 24px; }
+  .steps { grid-template-columns: 1fr 1fr; }
+  .stepCard { border-bottom: 1px solid var(--border); }
+  .stepArrow { display: none; }
+  .techGrid { grid-template-columns: 1fr 1fr; }
+  .authorBox { flex-direction: column; padding: 28px; }
+  .footer { flex-direction: column; gap: 8px; padding: 20px 24px; text-align: center; }
+  .ctaSection { padding: 48px 24px; }
+  .ctaBox { padding: 48px 24px; }
+}
+
+/*
+ * Small mobile — ≤ 600px
+ * ──────────────────────
+ * - Further reduced nav and hero padding
+ * - CTA buttons stack full-width vertically
+ * - Stats reduced to 2-per-row with smaller type
+ * - Steps and tech grids collapse to single column
+ */
+@media (max-width: 600px) {
+  .nav { padding: 14px 16px; }
+  .hero { padding: 32px 16px 48px; }
+  .heroSub { font-size: 1rem; }
+  .heroCtas { flex-direction: column; }
+  .ctaPrimary { font-size: 0.85rem; padding: 12px 20px; }
+  .statsBar { margin: 0 16px; }
+  .statItem { min-width: 50%; padding: 20px 16px; }
+  .statValue { font-size: 1.5rem; }
+  .section { padding: 48px 16px; }
+  .steps { grid-template-columns: 1fr; }
+  .techGrid { grid-template-columns: 1fr; }
+  .ctaSection { padding: 40px 16px; }
+  .ctaBox { padding: 32px 16px; }
+  .footer { padding: 20px 16px; }
+  .authorBox { padding: 20px 16px; gap: 20px; }
+  .authorAvatar { width: 60px; height: 60px; font-size: 1.2rem; }
+  .authorName { font-size: 1.1rem; }
+}
+
+/*
+ * Very small devices — ≤ 380px
+ * ─────────────────────────────
+ * Micro-corrections for the smallest common viewport (e.g. iPhone SE).
+ * Only the properties that would otherwise overflow or look cramped.
+ */
+@media (max-width: 380px) {
+  .navLogo { font-size: 0.9rem; }
+  .heroTitle { font-size: 2.5rem; }
+  .demoMessages { min-height: 160px; }
+}

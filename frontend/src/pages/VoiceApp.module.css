@@ -1,0 +1,256 @@
+/**
+ * VoiceApp.module.css
+ *
+ * Scoped styles for the VoiceApp shell and all inline tab panels
+ * (Analytics, Transcripts, Settings). The Voice tab itself is styled
+ * by ChatArea.module.css — only the shared wrapper and non-voice panels live here.
+ *
+ * Layout overview:
+ *   .app → flex row: [Sidebar | .main | StatsPanel]
+ *   .main → flex column: [tab panel content]
+ *   Tab panels (.tabPage) scroll independently; the outer shell never scrolls.
+ *
+ * Breakpoints:
+ *   ≤ 768px → mobile: app stacks vertically, reduced padding, 2-col metrics grid
+ *   ≤ 480px → very small mobile: metrics grid forced to 1×2, tighter padding
+ */
+
+/* ─── App shell ──────────────────────────────────────── */
+/*
+ * .app
+ * Three-column flex container that fills the full viewport height.
+ * overflow: hidden prevents any child from accidentally causing page scroll —
+ * each panel manages its own internal scroll independently.
+ * position: relative provides an anchor for any absolutely-positioned
+ * overlays rendered by child components.
+ */
+.app { display: flex; height: 100vh; overflow: hidden; position: relative; }
+
+/* ─── Back button ────────────────────────────────────── */
+/*
+ * .backBtn
+ * Fixed pill button horizontally centered at the top of the viewport.
+ * Fixed + left: 50% + translateX(-50%) centers it regardless of sidebar width,
+ * ensuring it stays visually centered over the full app shell.
+ * z-index: 100 keeps it above scrolling content in the main panel.
+ * backdrop-filter blur gives it legibility over any content that scrolls beneath it.
+ */
+.backBtn {
+  position: fixed; top: 16px; left: 50%; transform: translateX(-50%); z-index: 100;
+  font-family: var(--font-mono); font-size: 0.78rem; padding: 6px 16px; border-radius: 20px;
+  border: 1px solid var(--border-hi); color: var(--text-2); background: var(--bg-2);
+  backdrop-filter: blur(8px); transition: border-color 0.2s, color 0.2s;
+}
+.backBtn:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ─── Main content area ──────────────────────────────── */
+/*
+ * .main
+ * Center flex column that fills all remaining horizontal space between
+ * Sidebar and StatsPanel (flex: 1). min-width: 0 is critical — without it,
+ * a flex child with text content can overflow its container rather than shrinking.
+ * overflow: hidden delegates scroll responsibility to .tabPage inside.
+ */
+.main { flex: 1; display: flex; flex-direction: column; min-width: 0; overflow: hidden; }
+
+/* ─── Tab page wrapper ───────────────────────────────── */
+/*
+ * .tabPage
+ * Scrollable content area for each tab panel (Analytics, Transcripts, Settings).
+ * flex: 1 makes it fill .main vertically; overflow-y: auto enables independent
+ * scroll so the sidebar and stats panel remain fixed while tab content scrolls.
+ */
+.tabPage { flex: 1; overflow-y: auto; padding: 40px; display: flex; flex-direction: column; gap: 32px; }
+
+/*
+ * .tabHeader / .tabTitle / .tabSub
+ * Consistent heading block at the top of every tab panel.
+ * tabTitle uses --font-display at a large weight for visual hierarchy;
+ * tabSub uses text-3 (dimmest text token) to read as a secondary descriptor.
+ */
+.tabHeader { display: flex; flex-direction: column; gap: 6px; }
+.tabTitle { font-family: var(--font-display); font-weight: 800; font-size: 1.8rem; letter-spacing: -0.02em; }
+.tabSub { color: var(--text-3); font-size: 0.88rem; }
+
+/* ─── Analytics — metrics grid ───────────────────────── */
+/*
+ * .metricsGrid
+ * Three-column grid of summary stat cards.
+ * At ≤768px this collapses to 2 columns so cards remain readable
+ * without shrinking to unusable sizes.
+ */
+.metricsGrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+
+/*
+ * .metCard
+ * Individual metric tile. Flex column with a large value on top and a
+ * small label below. Border + bg-2 background keeps each card visually
+ * separated from the page background.
+ */
+.metCard { background: var(--bg-2); border: 1px solid var(--border); border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 6px; }
+
+/*
+ * .metVal
+ * Primary metric number. Font size 1.8rem and font-weight 800 make it
+ * the dominant visual element in each card. line-height: 1 prevents extra
+ * vertical space when the number is on a single line.
+ * Color is set inline per card (via the color prop in VoiceApp) to reflect
+ * the semantic meaning of each metric (accent = good, err = bad, etc.).
+ */
+.metVal { font-family: var(--font-display); font-size: 1.8rem; font-weight: 800; line-height: 1; }
+
+/* Uppercase monospace descriptor beneath each metric value */
+.metLabel { font-family: var(--font-mono); font-size: 0.68rem; color: var(--text-3); letter-spacing: 0.08em; text-transform: uppercase; }
+
+/* ─── Analytics — latency bar chart ─────────────────── */
+/* Container holding the chart label and the chart itself */
+.chartSection { display: flex; flex-direction: column; gap: 12px; }
+
+/* All-caps monospace section label above the chart (e.g. "LATENCY HISTORY") */
+.chartLabel { font-family: var(--font-mono); font-size: 0.68rem; color: var(--text-3); letter-spacing: 0.12em; }
+
+/*
+ * .chart
+ * Flex row of bar columns aligned to the bottom edge (align-items: flex-end).
+ * Fixed height of 120px acts as the visual ceiling for bar scaling —
+ * bars are sized as a percentage of this height in VoiceApp (l / 800 * 100%).
+ */
+.chart { display: flex; align-items: flex-end; gap: 6px; height: 120px; background: var(--bg-2); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+
+/* Empty state — centered via margin: auto within the flex chart container */
+.noData { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-3); margin: auto; }
+
+/*
+ * .barWrap
+ * Per-turn column wrapper. flex: 1 distributes all bars equally across
+ * the chart width regardless of how many turns exist.
+ * justify-content: flex-end pushes bars down from the bottom so they
+ * grow upward as the latency value increases.
+ */
+.barWrap { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%; justify-content: flex-end; }
+
+/*
+ * .bar
+ * The colored rectangle for each latency sample.
+ * min-height: 4px ensures very-low-latency turns still render a visible sliver.
+ * transition: height 0.3s ease animates bar height changes smoothly when
+ * new samples arrive and existing bars reflow.
+ * Background color and height are set inline in VoiceApp based on the latency value.
+ */
+.bar { width: 100%; border-radius: 4px 4px 0 0; min-height: 4px; transition: height 0.3s ease; }
+
+/* Tiny ms label below each bar — white-space: nowrap prevents wrapping on narrow bars */
+.barLabel { font-family: var(--font-mono); font-size: 0.6rem; color: var(--text-3); white-space: nowrap; }
+
+/* ─── Transcripts tab ────────────────────────────────── */
+/*
+ * .emptyTab
+ * Full-width placeholder card shown when the messages array is empty.
+ * Centered text inside a bordered bg-2 box matches the visual language
+ * of other empty states across the app.
+ */
+.emptyTab { color: var(--text-3); font-size: 0.9rem; padding: 40px; text-align: center; background: var(--bg-2); border: 1px solid var(--border); border-radius: 12px; }
+
+/* Vertical list of transcript message rows */
+.transcriptList { display: flex; flex-direction: column; gap: 16px; }
+
+/* Individual message row — flex column of [meta row] + [text bubble] */
+.txRow { display: flex; flex-direction: column; gap: 6px; }
+
+/* Row containing the role label and optional latency badge */
+.txMeta { display: flex; align-items: center; gap: 8px; }
+
+/* Role label ("YOU" / "AGENT") — monospace + uppercase for a log-like aesthetic */
+.txRole { font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.08em; }
+
+/*
+ * .txLatency
+ * Inline latency badge next to the role label on assistant messages.
+ * Only rendered when m.latency is present (user messages have no latency value).
+ */
+.txLatency { font-family: var(--font-mono); font-size: 0.68rem; color: var(--accent); background: var(--accent-dim); padding: 1px 6px; border-radius: 4px; }
+
+/*
+ * .txText
+ * Message bubble. max-width: 80% prevents very short messages from spanning
+ * the full panel width, preserving the conversational feel.
+ * On mobile this expands to 100% (see ≤768px breakpoint) since the panel
+ * is already narrow.
+ */
+.txText { padding: 14px 18px; border-radius: 10px; font-size: 0.95rem; line-height: 1.6; background: var(--bg-2); border: 1px solid var(--border); max-width: 80%; }
+
+/*
+ * .tx_user .txText
+ * Tinted border for user messages to visually distinguish them from
+ * assistant (default border color) messages without heavy background changes.
+ */
+.tx_user .txText { border-color: rgba(124,109,250,0.2); }
+
+/* ─── Settings tab ───────────────────────────────────── */
+/*
+ * .settingsList
+ * Single-column list of configuration rows inside a bordered container.
+ * border-radius + overflow: hidden clips the inner row borders at the corners
+ * so the list reads as one unified card.
+ */
+.settingsList { display: flex; flex-direction: column; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; background: var(--bg-2); }
+
+/*
+ * .settingRow
+ * Each row: label/description on the left, value badge on the right.
+ * border-bottom creates the internal divider between rows; the last-child
+ * rule removes the trailing border to avoid a double-border at the card edge.
+ */
+.settingRow { display: flex; align-items: center; justify-content: space-between; padding: 18px 24px; border-bottom: 1px solid var(--border); }
+.settingRow:last-child { border-bottom: none; }
+
+/* Setting name and subtitle description */
+.settingName { font-weight: 600; font-size: 0.92rem; }
+.settingDesc { font-size: 0.78rem; color: var(--text-3); margin-top: 2px; }
+
+/*
+ * .settingVal
+ * Monospace code-style badge for the configuration value (e.g. "nova-2").
+ * Accent color + dim background matches the latency badge and nav badge
+ * visual language used throughout the app for "technical value" tokens.
+ */
+.settingVal { font-family: var(--font-mono); font-size: 0.82rem; color: var(--accent); background: var(--accent-dim); padding: 4px 12px; border-radius: 6px; }
+
+/* ─── Responsive ─────────────────────────────────────── */
+
+/*
+ * Mobile — ≤ 768px
+ * ─────────────────
+ * - App shell stacks vertically (Sidebar on top, main below).
+ *   height: 100dvh uses the dynamic viewport unit to account for
+ *   mobile browser chrome (address bar) that can shift layout.
+ * - Tab page padding reduced to preserve horizontal space.
+ * - Tab title shrinks to prevent overflow on narrow screens.
+ * - Metrics grid drops to 2 columns so cards remain readable.
+ * - Metric values shrink to fit smaller cards.
+ * - Transcript bubbles expand to full width (panel is already narrow).
+ * - Settings rows stack vertically so long values don't overflow.
+ * - Chart height reduced to 80px to save vertical space.
+ */
+@media (max-width: 768px) {
+  .app { flex-direction: column; height: 100dvh; }
+  .tabPage { padding: 20px 16px; gap: 20px; }
+  .tabTitle { font-size: 1.3rem; }
+  .metricsGrid { grid-template-columns: repeat(2, 1fr); }
+  .metVal { font-size: 1.4rem; }
+  .txText { max-width: 100%; }
+  .settingRow { flex-direction: column; align-items: flex-start; gap: 8px; padding: 14px 16px; }
+  .chart { height: 80px; }
+}
+
+/*
+ * Very small mobile — ≤ 480px
+ * ────────────────────────────
+ * - Metrics grid locks to a 2-column layout (same as 768px breakpoint,
+ *   declared explicitly here to guard against any future intermediate override).
+ * - Tab page padding tightened further to maximize content area.
+ */
+@media (max-width: 480px) {
+  .metricsGrid { grid-template-columns: 1fr 1fr; }
+  .tabPage { padding: 16px 12px; }
+}
