@@ -87,3 +87,8 @@ def voice_pipeline(audio: UploadFile = File(...)):
   except Exception as e:
     ai_is_speaking = False
     raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/health")
+async def health_check():
+    return {"status": "ok", "message": "Backend is awake"}
