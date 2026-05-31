@@ -9,8 +9,17 @@ from pydantic import BaseModel
 
 load_dotenv()
 app = FastAPI()
-app.add_middleware(CORSMiddleware, allow_origins=["http://localhost:5173"], allow_methods=["*"], allow_headers=["*"], expose_headers=["X-Transcript","X-Reply","X-Warning"])
-
+app.add_middleware(
+    CORSMiddleware, 
+    allow_origins=[
+        "http://localhost:5173",
+        "https://ai-voice-agent-roan.vercel.app",
+        "https://*.vercel.app"
+    ], 
+    allow_methods=["*"], 
+    allow_headers=["*"], 
+    expose_headers=["X-Transcript","X-Reply","X-Warning"]
+)
 dg = DeepgramClient(api_key=os.getenv("DEEPGRAM_API_KEY"))
 groq_client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
