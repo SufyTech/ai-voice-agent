@@ -178,7 +178,7 @@ export default function LandingPage({ onEnterApp }) {
           <a href="#tech">Stack</a>
           <a href="#author">Builder</a>
           <a
-            href="https://github.com/YOUR_USERNAME/ai-voice-agent"
+            href="https://github.com/SufyTech/ai-voice-agent"
             target="_blank"
             rel="noreferrer"
             className={styles.navGh}
@@ -213,7 +213,7 @@ export default function LandingPage({ onEnterApp }) {
             Builder
           </a>
           <a
-            href="https://github.com/YOUR_USERNAME/ai-voice-agent"
+            href="https://github.com/SufyTech/ai-voice-agent"
             target="_blank"
             rel="noreferrer"
             onClick={() => setMenuOpen(false)}
@@ -259,7 +259,7 @@ export default function LandingPage({ onEnterApp }) {
               Try it live — no signup needed →
             </button>
             <a
-              href="https://github.com/YOUR_USERNAME/ai-voice-agent"
+              href="https://github.com/SufyTech/ai-voice-agent"
               target="_blank"
               rel="noreferrer"
               className={styles.ctaSecondary}
@@ -426,7 +426,7 @@ export default function LandingPage({ onEnterApp }) {
             </p>
             <div className={styles.authorLinks}>
               <a
-                href="https://linkedin.com/in/YOUR_USERNAME"
+                href="https://www.linkedin.com/in/sufiyan-khan-a86521301/"
                 target="_blank"
                 rel="noreferrer"
                 className={styles.authorLink}
@@ -434,14 +434,17 @@ export default function LandingPage({ onEnterApp }) {
                 LinkedIn ↗
               </a>
               <a
-                href="https://github.com/YOUR_USERNAME"
+                href="https://github.com/SufyTech/ai-voice-agent"
                 target="_blank"
                 rel="noreferrer"
                 className={styles.authorLink}
               >
                 GitHub ↗
               </a>
-              <a href="mailto:YOUR_EMAIL" className={styles.authorLink}>
+              <a
+                href="mailto:suzkhan135@gmail.com"
+                className={styles.authorLink}
+              >
                 Email ↗
               </a>
             </div>
@@ -467,7 +470,7 @@ export default function LandingPage({ onEnterApp }) {
           </button>
           <div className={styles.ctaLinks}>
             <a
-              href="https://github.com/YOUR_USERNAME/ai-voice-agent"
+              href="https://github.com/SufyTech/ai-voice-agent"
               target="_blank"
               rel="noreferrer"
             >
@@ -475,7 +478,7 @@ export default function LandingPage({ onEnterApp }) {
             </a>
             <span>·</span>
             <a
-              href="https://linkedin.com/in/YOUR_USERNAME"
+              href="https://www.linkedin.com/in/sufiyan-khan-a86521301/"
               target="_blank"
               rel="noreferrer"
             >
