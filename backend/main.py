@@ -52,7 +52,7 @@ def reset():
 @app.post("/configure")
 def configure(request: ConfigureRequest):
   global conversation_history
-  conversation_history[0] = {"role": "system", "content": PERSONAS.get(request.persona, PERSONAS["assistant"])}
+  conversation_history = [{"role": "system", "content": PERSONAS.get(request.persona, PERSONAS["assistant"])}]
   return {"status": "configured", "persona": request.persona}
 
 @app.post("/interrupt")
