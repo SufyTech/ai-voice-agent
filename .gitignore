@@ -5,8 +5,6 @@ backend/__pycache__/
 backend/*.pyc
 backend/*.mp3
 backend/*.wav
-backend/tests/
-backend/app/
 
 # Frontend
 frontend/node_modules/
